@@ -1,4 +1,24 @@
-module reconfig_pe_controller();
+module reconfig_pe_controller(
+    input wire        clk,
+    input wire        rst,
+    input wire       similar_neuron_counter_reached,
+    input wire       clk_counter_reached,
+    input wire       interval_counter_reached,
+    input wire       all_tile_done_reconfig,
+
+    output reg        similar_neuron_counter_en,
+    output reg        similar_neuron_counter_rst,
+    output reg        similar_neuron_counter_load,
+    output reg        clk_counter_en,
+    output reg        clk_counter_rst,
+    output reg        clk_counter_load,
+    output reg        interval_counter_en,
+    output reg        interval_counter_rst,
+    output reg        interval_counter_load,
+    output reg        pre_clk_register_wr_en,
+    output reg        pre_clk_register_rst,
+    output reg        reconfig_signal
+);
 
 
     reg[3:0] n_state, p_state;
@@ -13,7 +33,24 @@ module reconfig_pe_controller();
 
     always@(*) 
     begin
-        {en_similar_neuron_counter, similar_neuron_counter_reset} = 2'b0;
+        {
+
+            similar_neuron_counter_en,
+            similar_neuron_counter_rst,
+            similar_neuron_counter_load,
+            clk_counter_en,
+            clk_counter_rst,
+            clk_counter_load,
+            interval_counter_en,
+            interval_counter_rst,
+            interval_counter_load,
+            pre_clk_register_wr_en,
+            pre_clk_register_rst,
+            reconfig_signal
+
+        } = 12'b0;
+
+
         case(p_state)
             idle_state: begin 
                 n_state = count_state;
