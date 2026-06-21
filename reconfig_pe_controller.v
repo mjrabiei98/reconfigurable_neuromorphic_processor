@@ -17,7 +17,8 @@ module reconfig_pe_controller(
     output reg        interval_counter_load,
     output reg        pre_clk_register_wr_en,
     output reg        pre_clk_register_rst,
-    output reg        reconfig_signal
+    output reg        reconfig_signal,
+    output reg        send
 );
 
 
@@ -77,3 +78,60 @@ module reconfig_pe_controller(
 
 
 endmodule
+
+
+
+
+module send_reconfig_packet_wrapper (
+    input clk,
+    input rst,
+    input send,
+    input ack,
+    output reg req
+);
+    reg [1:0] p_state,n_state;
+    parameter idle_state = 2'b00;
+    parameter req_to_router_state = 2'b01;
+    // parameter wait_for_ack_state = 2'b10;
+    parameter send_state = 2'b10; 
+
+    always@(posedge clk, rst)begin
+        if(rst) p_state <= idle_state;
+        else p_state <= n_state;
+    end
+
+    always@(*) 
+    begin
+        {req, pop_flit} = 2'b00;
+        
+        case(p_state)
+            idle_state: begin 
+                n_state = send ? req_to_router_state : idle_state;
+
+            end
+
+            req_to_router_state: begin 
+                n_state = send_state;
+                req = 1'b1;
+                pop_flit = 1'b1;
+            end
+
+            // wait_for_ack_state: begin
+            //     n_state = ack ? send_state : wait_for_ack_state;
+            //     req = 1'b1;
+            // end
+
+            send_state: begin 
+                n_state = ack ? idle_state : send_state;
+                req = 1'b1;
+            end
+
+            default: n_state = idle_state;
+
+        endcase
+    end
+
+
+
+endmodule
+

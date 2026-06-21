@@ -4,9 +4,11 @@ module reconfig_pe # (
 ) (
     input wire        clk,
     input wire        rst,
+    input wire       router_ack,
     input wire       all_tile_done_reconfig, // not used in current implementation, can be used in future for more complex reconfiguration conditions
     output wire       reconfig_signal, // not used in current implementation, can be used in future to signal other components about the need for reconfiguration
-    output wire       [WIDTH-1:0] reconfig_packet
+    output wire       [WIDTH-1:0] reconfig_packet,
+    output wire       req_to_router 
 );
 
     wire        similar_neuron_counter_en;
@@ -24,6 +26,7 @@ module reconfig_pe # (
     wire       similar_neuron_counter_reached;
     wire       clk_counter_reached;
     wire       interval_counter_reached;
+    wire       send;
 
 
     reconfig_pe_datapath #(.WIDTH(WIDTH), .reconfig_after_interval(reconfig_after_interval)) datapath (
@@ -68,7 +71,31 @@ module reconfig_pe # (
         .interval_counter_load(interval_counter_load),
         .pre_clk_register_wr_en(pre_clk_register_wr_en),
         .pre_clk_register_rst(pre_clk_register_rst),
-        .reconfig_signal(reconfig_signal)
+        .reconfig_signal(reconfig_signal),
+        .send(send) 
+    );
+
+
+
+    /*
+    
+    module send_reconfig_packet_wrapper (
+    input clk,
+    input rst,
+    input send,
+    input ack,
+    output reg req
+);
+    
+    */
+
+
+    send_reconfig_packet_wrapper send_wrapper (
+        .clk(clk),
+        .rst(rst),
+        .send(send),
+        .ack(router_ack),
+        .req(req_to_router) 
     );
 
 
