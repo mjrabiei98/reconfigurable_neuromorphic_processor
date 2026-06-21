@@ -9,35 +9,6 @@ module reconfig_pe # (
     output wire       [WIDTH-1:0] reconfig_packet
 );
 
-/*
-
-module reconfig_pe_datapath # (
-    parameter WIDTH = 8,
-    parameter reconfig_after_interval = 4
-) (
-    input wire        clk,
-    input wire        rst,
-    input wire        similar_neuron_counter_en,
-    input wire        similar_neuron_counter_rst,
-    input wire        similar_neuron_counter_load,
-    input wire        clk_counter_en,
-    input wire        clk_counter_rst,
-    input wire        clk_counter_load,
-    input wire        interval_counter_en,
-    input wire        interval_counter_rst,
-    input wire        interval_counter_load,
-    input wire        pre_clk_register_wr_en,
-    input wire        pre_clk_register_rst,
-
-    output wire       similar_neuron_counter_reached,
-    output wire       clk_counter_reached,
-    output wire       interval_counter_reached,
-    output wire       [WIDTH-1:0] reconfig_packet
-
-);
-
-*/
-
     wire        similar_neuron_counter_en;
     wire        similar_neuron_counter_rst;
     wire        similar_neuron_counter_load;
@@ -74,30 +45,6 @@ module reconfig_pe_datapath # (
         .interval_counter_reached(interval_counter_reached),
         .reconfig_packet(reconfig_packet)
     );
-
-
-    /*
-    module reconfig_pe_controller(
-    input wire        clk,
-    input wire        rst,
-    input wire       similar_neuron_counter_reached,
-    input wire       clk_counter_reached,
-    input wire       interval_counter_reached,
-    input wire       all_tile_done_reconfig,
-
-    output reg        similar_neuron_counter_en,
-    output reg        similar_neuron_counter_rst,
-    output reg        similar_neuron_counter_load,
-    output reg        clk_counter_en,
-    output reg        clk_counter_rst,
-    output reg        clk_counter_load,
-    output reg        interval_counter_en,
-    output reg        interval_counter_rst,
-    output reg        interval_counter_load,
-    output reg        pre_clk_register_wr_en,
-    output reg        pre_clk_register_rst,
-    output reg        reconfig_signal
-);
 
     
     */

@@ -18,10 +18,14 @@ module PE #(parameter
     output_fifo_data_width = 8,
     output_fifo_depth = 32,
     number_right_shift = 2)(
-    input clk, rst, rd_output_fifo_noc, wr_input_fifo_noc, inject_interval,
+    input clk, rst, inject_interval,
     input [input_fifo_data_width-1:0] input_spike,
     output [output_fifo_data_width-1:0] output_spike,
-    output output_fifo_empty_signal, done_transmiting, communitation_signal
+    output output_fifo_empty_signal, done_transmiting, communitation_signal,
+    output req_to_router,
+    input ack_from_router,
+    input req_from_router,
+    output ack_from_pe
     );
 
 
@@ -41,7 +45,9 @@ module PE_controller  (input clk, rst, input_fifo_full, input_fifo_empty, compar
 
 
 */
+    // wire rd_output_fifo_noc, wr_input_fifo_noc;
 
+    wire push_input, pop_output;
     
     wire input_fifo_full, input_fifo_empty, comparator_0_out, comparator_1_out, comparator_2_out, comparator_3_out,
          neruron_counter_reached, spike_counter_reached, output_fifo_full, output_fifo_empty;
@@ -62,6 +68,7 @@ module PE_controller  (input clk, rst, input_fifo_full, input_fifo_empty, compar
     wire neuron_1_memberane_reg_wr_rst;
     wire neuron_2_memberane_reg_wr_rst;
     wire neuron_3_memberane_reg_wr_rst;
+    wire send, receive;
 
     PE_controller pe_ctrl(.clk(clk), .rst(rst), .input_fifo_full(input_fifo_full), .input_fifo_empty(input_fifo_empty), .comparator_0_out(comparator_0_out), .comparator_1_out(comparator_1_out), 
                           .comparator_2_out(comparator_2_out), .comparator_3_out(comparator_3_out),
@@ -85,7 +92,9 @@ module PE_controller  (input clk, rst, input_fifo_full, input_fifo_empty, compar
                           .neuron_0_memberane_reg_wr_rst(neuron_0_memberane_reg_wr_rst),
                           .neuron_1_memberane_reg_wr_rst(neuron_1_memberane_reg_wr_rst),
                           .neuron_2_memberane_reg_wr_rst(neuron_2_memberane_reg_wr_rst),
-                          .neuron_3_memberane_reg_wr_rst(neuron_3_memberane_reg_wr_rst));
+                          .neuron_3_memberane_reg_wr_rst(neuron_3_memberane_reg_wr_rst),
+                          .send(send),
+                          .receive(receive));
 
 
 /*
@@ -154,14 +163,14 @@ module PE_datapath #(
         .number_right_shift(number_right_shift)) 
     pe_dpth (
         .clk(clk), .rst(rst),
-        .input_spike_fifo_wr_en(input_spike_fifo_wr_en & wr_input_fifo_noc), 
+        .input_spike_fifo_wr_en(push_input), 
         .input_spike_fifo_rd_en(input_spike_fifo_rd_en), 
         .global_to_local_address_mem_wr_en(global_to_local_address_mem_wr_en), .local_weight_mem_wr_en(local_weight_mem_wr_en),
         .neuron_0_memberane_reg_wr_en(neuron_0_memberane_reg_wr_en), .neuron_1_memberane_reg_wr_en(neuron_1_memberane_reg_wr_en), 
         .neuron_2_memberane_reg_wr_en(neuron_2_memberane_reg_wr_en), .neuron_3_memberane_reg_wr_en(neuron_3_memberane_reg_wr_en),
         .neuron_counter_en(neuron_counter_en), .neuron_counter_load(neuron_counter_load), .spike_counter_en(spike_counter_en), 
         .spike_counter_load(spike_counter_load), .output_spike_local_mem_wr_en(output_spike_local_mem_wr_en),
-        .local_spike_to_global_address_mem_wr_en(local_spike_to_global_address_mem_wr_en), .output_fifo_wr_en(output_fifo_wr_en), .output_fifo_rd_en(output_fifo_rd_en & rd_output_fifo_noc),
+        .local_spike_to_global_address_mem_wr_en(local_spike_to_global_address_mem_wr_en), .output_fifo_wr_en(output_fifo_wr_en), .output_fifo_rd_en(pop_output),
 
         .input_spike_fifo_din(input_spike),
 
@@ -180,6 +189,28 @@ module PE_datapath #(
         .neuron_1_memberane_reg_wr_rst(neuron_1_memberane_reg_wr_rst),
         .neuron_2_memberane_reg_wr_rst(neuron_2_memberane_reg_wr_rst),
         .neuron_3_memberane_reg_wr_rst(neuron_3_memberane_reg_wr_rst));
+
+
+
+    
+
+    receive_controller rc_ctrl(
+        .clk(clk),
+        .rst(rst),
+        .receive(receive),
+        .req(req_from_router),
+        .ack(ack_from_pe),
+        .push_flit(push_input)
+    );
+
+    send_controller    send_ctrl(
+        .clk(clk),
+        .rst(rst),
+        .send(send),
+        .req(req_to_router),
+        .ack(ack_from_router),
+        .pop_flit(pop_output)
+    );
 
 
     
