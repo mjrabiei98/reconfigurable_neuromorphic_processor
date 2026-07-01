@@ -283,3 +283,18 @@ module Memory #(
     end
 
 endmodule
+
+
+
+module reconfig_packet_generator #(
+    parameter WIDTH = 8,
+    parameter neuron_address_size = 8,
+    parameter all_dest = 4'b1111
+) (
+    input wire [neuron_address_size-1:0] neuron_list_memory_dout,
+    input wire change_value,
+    output wire [neuron_address_size + 8:0] reconfig_packet
+);
+    assign reconfig_packet = {all_dest, all_dest, change_value, neuron_list_memory_dout};
+
+endmodule

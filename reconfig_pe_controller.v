@@ -1,10 +1,11 @@
 module reconfig_pe_controller(
     input wire        clk,
     input wire        rst,
-    input wire       similar_neuron_counter_reached,
-    input wire       clk_counter_reached,
-    input wire       interval_counter_reached,
-    input wire       all_tile_done_reconfig,
+    input wire        similar_neuron_counter_reached,
+    input wire        clk_counter_reached,
+    input wire        interval_counter_reached,
+    input wire        all_tile_done_communicating,
+    input wire        router_ack,
 
     output reg        similar_neuron_counter_en,
     output reg        similar_neuron_counter_rst,
@@ -17,15 +18,14 @@ module reconfig_pe_controller(
     output reg        interval_counter_load,
     output reg        pre_clk_register_wr_en,
     output reg        pre_clk_register_rst,
-    output reg        reconfig_signal,
     output reg        send
 );
 
 
     reg[3:0] n_state, p_state;
   
-    parameter idle_state = 2'b00, count_state = 2'b01, compare_state = 2'b10,
-        send_reconfig_packet_state = 2'b11;
+    parameter idle_state = 3'b000, count_state = 3'b001, compare_state = 3'b010,
+        send_reconfig_packet_state_1 = 3'b011, send_reconfig_packet_state_2 = 3'b100;
             
     always@(posedge clk, rst)begin
         if(rst) p_state <= idle_state;
@@ -46,31 +46,37 @@ module reconfig_pe_controller(
             interval_counter_rst,
             interval_counter_load,
             pre_clk_register_wr_en,
-            pre_clk_register_rst,
-            reconfig_signal
+            pre_clk_register_rst
 
-        } = 12'b0;
+        } = 11'b0;
 
 
         case(p_state)
             idle_state: begin 
                 n_state = count_state;
-                en_similar_neuron_counter = 1'b1;
+                similar_neuron_counter_en = 1'b1;
             end
             count_state: begin 
                 n_state = compare_state;
-                en_similar_neuron_counter = 1'b1;
-                similar_neuron_counter_reset = 1'b0;
+                similar_neuron_counter_en = 1'b1;
+                similar_neuron_counter_rst = 1'b0;
             end
             compare_state: begin 
-                n_state = (similar_neuron_counter_reached) ? send_reconfig_packet_state : count_state;
-                en_similar_neuron_counter = 1'b0;
-                similar_neuron_counter_reset = 1'b0;
+                n_state = (similar_neuron_counter_reached) ? send_reconfig_packet_state_1 : count_state;
+                similar_neuron_counter_en = 1'b0;
+                similar_neuron_counter_rst = 1'b0;
             end
-            send_reconfig_packet_state: begin 
+            send_reconfig_packet_state_1: begin 
                 n_state = idle_state;
-                en_similar_neuron_counter = 1'b0;
-                similar_neuron_counter_reset = 1'b1;
+                similar_neuron_counter_en = 1'b0;
+                similar_neuron_counter_rst = 1'b1;
+
+            end
+
+            send_reconfig_packet_state_2: begin 
+                n_state = idle_state;
+                similar_neuron_counter_en = 1'b0;
+                similar_neuron_counter_rst = 1'b1;
 
             end
         endcase
@@ -102,7 +108,8 @@ module send_reconfig_packet_wrapper (
 
     always@(*) 
     begin
-        {req, pop_flit} = 2'b00;
+
+        req = 1'b0;
         
         case(p_state)
             idle_state: begin 
@@ -113,7 +120,6 @@ module send_reconfig_packet_wrapper (
             req_to_router_state: begin 
                 n_state = send_state;
                 req = 1'b1;
-                pop_flit = 1'b1;
             end
 
             // wait_for_ack_state: begin

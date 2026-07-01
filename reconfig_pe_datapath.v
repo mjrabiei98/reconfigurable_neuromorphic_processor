@@ -1,6 +1,10 @@
 module reconfig_pe_datapath # (
     parameter WIDTH = 8,
-    parameter reconfig_after_interval = 4
+    parameter reconfig_after_interval = 4,
+    parameter neuron_list_size = 4,
+    parameter all_dest = 4'b1111,
+    parameter neuron_address_size = 10,
+    parameter Similar_neuron_INIT_FILE = ""
 ) (
     input wire        clk,
     input wire        rst,
@@ -28,6 +32,7 @@ module reconfig_pe_datapath # (
     wire [WIDTH-1:0] interval_counter_count;
     wire [WIDTH-1:0] pre_clk_counter_register_dout;
     wire gt_eq; // output of comparator, 1 if clk_counter_count >= interval_counter_count
+    wire [WIDTH-1:0] neuron_address; // address of the neuron to be reconfigured
 
 
 
@@ -80,4 +85,30 @@ module reconfig_pe_datapath # (
         .din(clk_counter_count), 
         .dout(pre_clk_counter_register_dout)
     );
+
+
+    Memory #(
+        .ADDR_WIDTH(),
+        .DATA_WIDTH(WIDTH),
+        .INIT_FILE(Similar_neuron_INIT_FILE)
+    ) neuron_list_memory (
+        .clk(clk),
+        .rst(rst),
+        .wr_en(1'b0), // No write operation in this module
+        .addr(similar_neuron_counter_count[$clog2(neuron_list_size)-1:0]), // Use the counter as address
+        .din({WIDTH{1'b0}}), // No data input since we are not writing
+        .dout(neuron_address)
+    );
+
+
+    reconfig_packet_generator #(
+        .WIDTH(WIDTH),
+        .neuron_address(neuron_address_size),
+        .all_dest(all_dest)
+    ) reconfig_packet_gen (
+        .neuron_list_memory_dout(neuron_address),
+        .reconfig_packet(reconfig_packet)
+    );
+
+
 endmodule
