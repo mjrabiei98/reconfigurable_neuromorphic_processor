@@ -3,12 +3,17 @@ module PE_datapath #(
     number_of_neuron = 4,
     input_fifo_data_width = 8,
     input_fifo_depth = 32,
-    global_to_local_address_mem_init_file = "",
     global_to_local_address_mem_data_width = 32,
     global_to_local_address_mem_address_width = 32,
+    weight_mem_address_width = 32,
+    weight_mem_data_width = 32,
+    weight_mem_0_init_file = "",
+    weight_mem_1_init_file = "",
+    weight_mem_2_init_file = "",
+    weight_mem_3_init_file = "",
+    weight_mem_data_width = 32,
     local_weight_mem_data_width = 32,
     local_weight_mem_address_width = 32,
-    local_weight_mem_init_file = "",
     membrane_reg_data_width = 32,
     thr_reg_init_value = 8,
     spike_counter_width = 10,
@@ -46,9 +51,14 @@ module PE_datapath #(
     wire [input_fifo_data_width-1:0] input_spike_fifo_dout;
     wire [global_to_local_address_mem_data_width-1:0] global_to_local_address_mem_output;
     wire [local_weight_mem_data_width-1:0] local_weight_mem_input, local_weight_mem_output;
+    wire [weight_mem_data_width - 1 : 0 ] weight_mem_0_output;
+    wire [weight_mem_data_width - 1 : 0 ] weight_mem_1_output;
+    wire [weight_mem_data_width - 1 : 0 ] weight_mem_2_output;
+    wire [weight_mem_data_width - 1 : 0 ] weight_mem_3_output;
     wire [membrane_reg_data_width-1:0] membrane_adder_out, neuron_0_memberane_reg_out, neuron_1_memberane_reg_out, 
         neuron_2_memberane_reg_out, neuron_3_memberane_reg_out, membrane_mux_out;
     wire [membrane_reg_data_width-1:0] thr_reg_0_out, thr_reg_1_out, thr_reg_2_out, thr_reg_3_out;
+    wire [weight_mem_data_width-1:0] weight_mem_mux_out;
     wire [spike_counter_width-1:0] spike_counter_out;
     wire [2*spike_counter_width-1:0] output_spike_local_mem_out;
     wire [spike_counter_width-1:0] adder2_out;
@@ -63,15 +73,83 @@ module PE_datapath #(
 
 
 
-    Memory #(.ADDR_WIDTH(global_to_local_address_mem_address_width), .DATA_WIDTH(global_to_local_address_mem_data_width), .INIT_FILE(global_to_local_address_mem_init_file)) global_to_local_address_mem(.clk(clk), .rst(rst), .wr_en(global_to_local_address_mem_wr_en), .addr(input_spike_fifo_dout), .din(), .dout(global_to_local_address_mem_output));
-    Memory #(.ADDR_WIDTH(local_weight_mem_address_width), .DATA_WIDTH(local_weight_mem_data_width), .INIT_FILE(local_weight_mem_init_file)) local_weight_mem(.clk(clk), .rst(rst), .wr_en(local_weight_mem_wr_en), .addr(global_to_local_address_mem_output), .din(local_weight_mem_input), .dout(local_weight_mem_output));
+    // Memory #(.ADDR_WIDTH(global_to_local_address_mem_address_width), .DATA_WIDTH(global_to_local_address_mem_data_width), .INIT_FILE(global_to_local_address_mem_init_file)) global_to_local_address_mem(.clk(clk), .rst(rst), .wr_en(global_to_local_address_mem_wr_en), .addr(input_spike_fifo_dout), .din(), .dout(global_to_local_address_mem_output));
+    // Memory #(.ADDR_WIDTH(local_weight_mem_address_width), .DATA_WIDTH(local_weight_mem_data_width), .INIT_FILE(local_weight_mem_init_file)) local_weight_mem(.clk(clk), .rst(rst), .wr_en(local_weight_mem_wr_en), .addr(global_to_local_address_mem_output), .din(local_weight_mem_input), .dout(local_weight_mem_output));
+    Memory #(
+        .ADDR_WIDTH(weight_mem_address_width), 
+        .DATA_WIDTH(weight_mem_data_width), 
+        .INIT_FILE(weight_mem_0_init_file)) 
+    weight_mem0(
+        .clk(clk), 
+        .rst(rst), 
+        .wr_en(local_weight_mem_wr_en), 
+        .addr(input_spike_fifo_dout[19:10]), 
+        .din(), 
+        .dout()
+    );
 
+    Memory #(
+        .ADDR_WIDTH(weight_mem_address_width), 
+        .DATA_WIDTH(weight_mem_data_width), 
+        .INIT_FILE(weight_mem_1_init_file)) 
+    weight_mem1(
+        .clk(clk), 
+        .rst(rst), 
+        .wr_en(local_weight_mem_wr_en), 
+        .addr(input_spike_fifo_dout[19:10]), 
+        .din(), 
+        .dout(weight_mem_1_output)
+    );
+
+    Memory #(
+        .ADDR_WIDTH(weight_mem_address_width), 
+        .DATA_WIDTH(weight_mem_data_width), 
+        .INIT_FILE(weight_mem_2_init_file)) 
+    weight_mem2(
+        .clk(clk), 
+        .rst(rst), 
+        .wr_en(local_weight_mem_wr_en), 
+        .addr(input_spike_fifo_dout[19:10]), 
+        .din(), 
+        .dout(weight_mem_2_output)
+    );
+    
+
+    Memory #(
+        .ADDR_WIDTH(weight_mem_address_width), 
+        .DATA_WIDTH(weight_mem_data_width), 
+        .INIT_FILE(weight_mem_3_init_file)) 
+    weight_mem3(
+        .clk(clk), 
+        .rst(rst), 
+        .wr_en(local_weight_mem_wr_en), 
+        .addr(input_spike_fifo_dout[19:10]), 
+        .din(), 
+        .dout(weight_mem_3_output)
+    );
+    
+
+    mux4to1 #(
+        .DATA_WIDTH(weight_mem_data_width)
+    ) weight_memory_mux( 
+        .in0(weight_mem_0_output), 
+        .in1(weight_mem_1_output), 
+        .in2(weight_mem_2_output), 
+        .in3(weight_mem_3_output), 
+        .sel(input_spike_fifo_dout[1:0]), 
+        .out(weight_mem_mux_out)
+    );
+
+
+
+
+    
     Adder #(.DATA_WIDTH(local_weight_mem_data_width-2)) memberane_adder(.a(weight_mux_out), .b(membrane_mux_out), .sum(membrane_adder_out), .cin(adder_cin));
     
     shifter #(.number_right_shift(number_right_shift), .DATA_WIDTH(local_weight_mem_data_width-2)) weight_shifter(.din(membrane_mux_out), .dout(weight_shifter_out));
     not_each_bit #(.DATA_WIDTH(local_weight_mem_data_width-2)) weight_inverter(.in(weight_shifter_out), .out(weight_inverter_out));
 
-    mux2to1 #(.DATA_WIDTH(local_weight_mem_data_width-2)) weight_mux(.in0(local_weight_mem_output[local_weight_mem_data_width-1:2]), .in1(weight_inverter_out), .sel(wight_mux_sel), .out(weight_mux_out));
+    mux2to1 #(.DATA_WIDTH(weight_mem_data_width)) weight_mux(.in0(weight_mem_mux_out), .in1(weight_inverter_out), .sel(input_spike_fifo_dout[1:0]), .out(weight_mux_out)); // ???? selectesh chie????
     
 
 
@@ -82,7 +160,7 @@ module PE_datapath #(
     Register #(.DATA_WIDTH(membrane_reg_data_width)) neuron_3_memberane_reg (.clk(clk), .rst(rst || neuron_3_memberane_reg_wr_rst), .wr_en(neuron_3_memberane_reg_wr_en), .din(membrane_adder_out), .dout(neuron_3_memberane_reg_out));
 
 
-    assign post_local_index = local_weight_mem_output[1:0];
+    assign post_local_index = input_spike_fifo_dout[1:0];
 
     /*local_weight_mem_output  bara sel bayad bakhshish entekhab she*/
     mux4to1 #(.DATA_WIDTH(membrane_reg_data_width)) membrane_mux( .in0(neuron_0_memberane_reg_out), .in1(neuron_1_memberane_reg_out), .in2(neuron_2_memberane_reg_out), .in3(neuron_3_memberane_reg_out), .sel(membrane_mux_sel), .out(membrane_mux_out));
