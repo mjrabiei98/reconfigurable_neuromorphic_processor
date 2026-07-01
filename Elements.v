@@ -296,3 +296,28 @@ module reconfig_packet_generator #(
     assign reconfig_packet = {1'b1, 4'b0000, 4'b0000, neuron_list_memory_dout, 1'b0, change_value};
 
 endmodule
+
+
+module counter_with_limit #(
+    parameter COUNT_WIDTH = 8,
+    parameter LIMIT = 8
+) (
+    input  wire                  clk,
+    input  wire                  rst,
+    input  wire                  en,
+    output wire                  reached,
+    output reg  [COUNT_WIDTH-1:0] count
+);
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            count <= {COUNT_WIDTH{1'b0}};
+        end else if (en && (count != LIMIT)) begin
+            count <= count + 1;
+        end else if (count == LIMIT) begin
+            count <= {COUNT_WIDTH{1'b0}};
+        end
+    end
+    assign reached = (count == LIMIT) ? 1'b1 : 1'b0;
+
+endmodule
