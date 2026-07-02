@@ -11,6 +11,8 @@ module PE_datapath #(
     weight_mem_1_init_file = "",
     weight_mem_2_init_file = "",
     weight_mem_3_init_file = "",
+    changed_neuron_location_memory_init_file = "",
+    mapped_neuron_memory_init_file = "",
     local_weight_mem_data_width = 32,
     local_weight_mem_address_width = 32,
     membrane_reg_data_width = 32,
@@ -40,12 +42,14 @@ module PE_datapath #(
     input [1:0] membrane_mux_sel,
     input neuron_0_memberane_reg_wr_rst,neuron_1_memberane_reg_wr_rst,neuron_2_memberane_reg_wr_rst,neuron_3_memberane_reg_wr_rst,
     input reconfig_mux_sel,
+    input neural_location_status_wr_en,
 
     output input_fifo_full, input_fifo_empty, comparator_0_out, comparator_1_out, comparator_2_out, comparator_3_out,
            neruron_counter_reached, spike_counter_reached, output_fifo_full, output_fifo_empty,
     output [2:0] neuron_counter_out,
     output [1:0]post_local_index,
-    output [output_fifo_data_width-1:0] output_spike
+    output [output_fifo_data_width-1:0] output_spike,
+    output reconfig_signal
 
 );
 
@@ -91,6 +95,8 @@ module PE_datapath #(
         );
 
 
+    assign reconfig_signal = (input_spike_fifo_dout[20:20] == 1'b1) ? 1'b1 : 1'b0;
+
 
 
     // Memory #(.ADDR_WIDTH(global_to_local_address_mem_address_width), .DATA_WIDTH(global_to_local_address_mem_data_width), .INIT_FILE(global_to_local_address_mem_init_file)) global_to_local_address_mem(.clk(clk), .rst(rst), .wr_en(global_to_local_address_mem_wr_en), .addr(input_spike_fifo_dout), .din(), .dout(global_to_local_address_mem_output));
@@ -102,10 +108,10 @@ module PE_datapath #(
     weight_mem0(
         .clk(clk), 
         .rst(rst), 
-        .wr_en(local_weight_mem_wr_en), 
+        .wr_en(), 
         .addr(input_spike_fifo_dout[19:10]), 
         .din(), 
-        .dout()
+        .dout(weight_mem_0_output)
     );
 
     Memory #(
@@ -115,7 +121,7 @@ module PE_datapath #(
     weight_mem1(
         .clk(clk), 
         .rst(rst), 
-        .wr_en(local_weight_mem_wr_en), 
+        .wr_en(), 
         .addr(input_spike_fifo_dout[19:10]), 
         .din(), 
         .dout(weight_mem_1_output)
@@ -128,7 +134,7 @@ module PE_datapath #(
     weight_mem2(
         .clk(clk), 
         .rst(rst), 
-        .wr_en(local_weight_mem_wr_en), 
+        .wr_en(), 
         .addr(input_spike_fifo_dout[19:10]), 
         .din(), 
         .dout(weight_mem_2_output)
@@ -142,7 +148,7 @@ module PE_datapath #(
     weight_mem3(
         .clk(clk), 
         .rst(rst), 
-        .wr_en(local_weight_mem_wr_en), 
+        .wr_en(), 
         .addr(input_spike_fifo_dout[19:10]), 
         .din(), 
         .dout(weight_mem_3_output)
@@ -249,7 +255,7 @@ module PE_datapath #(
     Memory #(
         .ADDR_WIDTH(weight_mem_address_width), 
         .DATA_WIDTH(weight_mem_data_width), 
-        .INIT_FILE(weight_mem_3_init_file)) 
+        .INIT_FILE(changed_neuron_location_memory_init_file)) 
     changed_neuron_location_memory(
         .clk(clk), 
         .rst(rst), 
@@ -263,7 +269,7 @@ module PE_datapath #(
     Memory #(
         .ADDR_WIDTH(), 
         .DATA_WIDTH(), 
-        .INIT_FILE()) 
+        .INIT_FILE(mapped_neuron_memory_init_file)) 
     mapped_neuron_memory(
         .clk(clk), 
         .rst(rst), 
@@ -291,7 +297,7 @@ module PE_datapath #(
     neuron_location_status(
         .clk(clk), 
         .rst(rst), 
-        .wr_en(), 
+        .wr_en(neural_location_status_wr_en), 
         .addr(reconfig_mux_out), 
         .din(input_spike_fifo_dout[0:0]), 
         .dout(neuron_location_status_out)

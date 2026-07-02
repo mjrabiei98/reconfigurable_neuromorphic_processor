@@ -4,6 +4,7 @@ module PE_controller  (input clk, rst, input_fifo_full, input_fifo_empty, compar
                              output reg adder_cin, wight_mux_sel,
                        input [2:0] neuron_counter,
                        input [1:0]post_local_index,
+                       input reconfig_signal,
                        output reg input_spike_fifo_wr_en, 
                               input_spike_fifo_rd_en, 
                               global_to_local_address_mem_wr_en, local_weight_mem_wr_en,
@@ -15,14 +16,16 @@ module PE_controller  (input clk, rst, input_fifo_full, input_fifo_empty, compar
                               output reg neuron_0_memberane_reg_wr_rst,neuron_1_memberane_reg_wr_rst,neuron_2_memberane_reg_wr_rst,neuron_3_memberane_reg_wr_rst,
                               output reg send,
                               output reg receive,
-                              output reg reconfig_mux_sel
+                              output reg reconfig_mux_sel,
+                              output reg neural_location_status_wr_en
                               );
 
     reg[3:0] n_state, p_state;
   
-    parameter initial_state = 4'b0000, read_fifo = 4'b0001, decode_global_address = 4'b0010,
+    parameter initial_state = 4'b0000, read_fifo = 4'b0001, reconfigure_state = 4'b0010,
         read_local_weight = 4'b0011, update_membrane = 4'b0100, compare_with_threshold = 4'b0101,
-        generate_output_spike = 4'b0110, fill_output_fifo = 4'b0111, send_and_receive = 4'b1000, done_neuron = 4'b1001, leakage = 4'b1010;
+        generate_output_spike = 4'b0110, check_neuron_location = 4'b0111, fill_output_fifo = 4'b1000, 
+        send_and_receive = 4'b1001, done_neuron = 4'b1010, leakage = 4'b1011;
             
     always@(posedge clk, rst)begin
         if(rst) p_state <= initial_state;
@@ -38,7 +41,7 @@ module PE_controller  (input clk, rst, input_fifo_full, input_fifo_empty, compar
          neuron_counter_en, neuron_counter_load, spike_counter_en, spike_counter_load, output_spike_local_mem_wr_en,
          local_spike_to_global_address_mem_wr_en, output_fifo_wr_en, output_fifo_rd_en, done_transmiting, communitation_signal,wight_mux_sel,adder_cin,
          neuron_counter_rst, spike_counter_rst,neuron_0_memberane_reg_wr_rst,neuron_1_memberane_reg_wr_rst,
-         neuron_2_memberane_reg_wr_rst,neuron_3_memberane_reg_wr_rst, send, receive, reconfig_mux_sel} = 29'b0;
+         neuron_2_memberane_reg_wr_rst,neuron_3_memberane_reg_wr_rst, send, receive, reconfig_mux_sel, neural_location_status_wr_en} = 30'b0;
          membrane_mux_sel =  post_local_index;
         
     case(p_state)
@@ -59,12 +62,14 @@ module PE_controller  (input clk, rst, input_fifo_full, input_fifo_empty, compar
 
         end
         read_fifo : begin 
-            n_state = decode_global_address;
+            n_state = reconfig_signal ? reconfigure_state : read_local_weight;
             input_spike_fifo_rd_en = 1'b1;
             neuron_counter_rst = 1'b1;
         end
-        decode_global_address: begin 
-            n_state = read_local_weight;
+        reconfigure_state: begin 
+            n_state = read_fifo;
+            reconfig_mux_sel = 1'b1;
+            neural_location_status_wr_en = 1'b1;
         end
         read_local_weight: begin 
             n_state = update_membrane;
@@ -100,8 +105,13 @@ module PE_controller  (input clk, rst, input_fifo_full, input_fifo_empty, compar
             
         end
         generate_output_spike:begin 
-            n_state = fill_output_fifo;
+            n_state = check_neuron_location;
             spike_counter_en = 1'b1;
+
+        end
+
+        check_neuron_location: begin 
+            n_state = fill_output_fifo;
 
 
         end 
