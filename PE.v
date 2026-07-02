@@ -1,26 +1,29 @@
+
+
+
 module PE #(parameter 
-    number_of_neuron = 4,
-    input_fifo_data_width = 8,
-    input_fifo_depth = 32,
-    global_to_local_address_mem_init_file = "",
-    global_to_local_address_mem_data_width = 32,
-    global_to_local_address_mem_address_width = 32,
-    local_weight_mem_data_width = 32,
-    local_weight_mem_address_width = 32,
-    local_weight_mem_init_file = "",
-    membrane_reg_data_width = 32,
+    weight_mem_data_width = 32,
+    weight_mem_0_init_file = "",
+    weight_mem_1_init_file = "",
+    weight_mem_2_init_file = "",
+    weight_mem_3_init_file = "",
+    changed_neuron_location_memory_init_file = "",
+    mapped_neuron_memory_init_file = "",
     thr_reg_init_value = 8,
+
+
     spike_counter_width = 10,
     output_spike_local_mem_init_file = "",
-    output_spike_local_mem_data_width = 32,
+
     local_spike_to_global_address_mem_init_file = "",
-    local_spike_to_global_address_mem_data_width = 32,
-    output_fifo_data_width = 8,
     output_fifo_depth = 32,
-    number_right_shift = 2)(
+    number_right_shift = 2,
+    packet_width = 21
+
+    )(
     input clk, rst, inject_interval,
-    input [input_fifo_data_width-1:0] input_spike,
-    output [output_fifo_data_width-1:0] output_spike,
+    input [packet_width-1:0] input_spike,
+    output [packet_width-1:0] output_spike,
     output output_fifo_empty_signal, done_transmiting, communitation_signal,
     output req_to_router,
     input ack_from_router,
@@ -148,27 +151,49 @@ module PE_datapath #(
 
 */
 
+
+
+/*
+
+   weight_mem_data_width = 32,
+    weight_mem_0_init_file = "",
+    weight_mem_1_init_file = "",
+    weight_mem_2_init_file = "",
+    weight_mem_3_init_file = "",
+    changed_neuron_location_memory_init_file = "",
+    mapped_neuron_memory_init_file = "",
+    thr_reg_init_value = 8,
+
+
+    spike_counter_width = 10,
+    output_spike_local_mem_init_file = "",
+
+    local_spike_to_global_address_mem_init_file = "",
+    output_fifo_depth = 32,
+    number_right_shift = 2,
+    packet_width = 21
+
+
+*/
+
     PE_datapath #( 
-        .number_of_neuron(number_of_neuron),
-        .input_fifo_data_width(input_fifo_data_width),
-        .input_fifo_depth(input_fifo_depth),
-        .global_to_local_address_mem_init_file(global_to_local_address_mem_init_file),
-        .global_to_local_address_mem_data_width(global_to_local_address_mem_data_width),
-        .global_to_local_address_mem_address_width(global_to_local_address_mem_address_width),
-        .local_weight_mem_data_width(local_weight_mem_data_width),
-        .local_weight_mem_address_width(local_weight_mem_address_width),
-        .local_weight_mem_init_file(local_weight_mem_init_file),
-        .membrane_reg_data_width(membrane_reg_data_width),
+        .weight_mem_data_width(weight_mem_data_width),
+        .weight_mem_0_init_file(weight_mem_0_init_file),
+        .weight_mem_1_init_file(weight_mem_1_init_file),
+        .weight_mem_2_init_file(weight_mem_2_init_file),
+        .weight_mem_3_init_file(weight_mem_3_init_file),
+        .changed_neuron_location_memory_init_file(changed_neuron_location_memory_init_file),
+        .mapped_neuron_memory_init_file(mapped_neuron_memory_init_file),
         .thr_reg_init_value(thr_reg_init_value),
         .spike_counter_width(spike_counter_width),
         .output_spike_local_mem_init_file(output_spike_local_mem_init_file),
-        .output_spike_local_mem_data_width(output_spike_local_mem_data_width),
         .local_spike_to_global_address_mem_init_file(local_spike_to_global_address_mem_init_file),
-        .local_spike_to_global_address_mem_data_width(local_spike_to_global_address_mem_data_width),
-        .output_fifo_data_width(output_fifo_data_width),
         .output_fifo_depth(output_fifo_depth),
-        .number_right_shift(number_right_shift)) 
-    pe_dpth (
+        .number_right_shift(number_right_shift),
+        .packet_width(packet_width)
+    ) 
+    pe_dpth 
+    (
         .clk(clk), .rst(rst),
         .input_spike_fifo_wr_en(push_input), 
         .input_spike_fifo_rd_en(input_spike_fifo_rd_en), 
