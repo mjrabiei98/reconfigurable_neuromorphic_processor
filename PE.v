@@ -69,6 +69,7 @@ module PE_controller  (input clk, rst, input_fifo_full, input_fifo_empty, compar
     wire neuron_2_memberane_reg_wr_rst;
     wire neuron_3_memberane_reg_wr_rst;
     wire send, receive;
+    wire reconfig_mux_sel;
 
     PE_controller pe_ctrl(.clk(clk), .rst(rst), .input_fifo_full(input_fifo_full), .input_fifo_empty(input_fifo_empty), .comparator_0_out(comparator_0_out), .comparator_1_out(comparator_1_out), 
                           .comparator_2_out(comparator_2_out), .comparator_3_out(comparator_3_out),
@@ -94,7 +95,8 @@ module PE_controller  (input clk, rst, input_fifo_full, input_fifo_empty, compar
                           .neuron_2_memberane_reg_wr_rst(neuron_2_memberane_reg_wr_rst),
                           .neuron_3_memberane_reg_wr_rst(neuron_3_memberane_reg_wr_rst),
                           .send(send),
-                          .receive(receive));
+                          .receive(receive),
+                          .reconfig_mux_sel(reconfig_mux_sel));
 
 
 /*
@@ -188,7 +190,8 @@ module PE_datapath #(
         .neuron_0_memberane_reg_wr_rst(neuron_0_memberane_reg_wr_rst),
         .neuron_1_memberane_reg_wr_rst(neuron_1_memberane_reg_wr_rst),
         .neuron_2_memberane_reg_wr_rst(neuron_2_memberane_reg_wr_rst),
-        .neuron_3_memberane_reg_wr_rst(neuron_3_memberane_reg_wr_rst));
+        .neuron_3_memberane_reg_wr_rst(neuron_3_memberane_reg_wr_rst),
+        .reconfig_mux_sel(reconfig_mux_sel));
 
 
 

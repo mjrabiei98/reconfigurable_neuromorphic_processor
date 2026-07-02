@@ -14,7 +14,9 @@ module PE_controller  (input clk, rst, input_fifo_full, input_fifo_empty, compar
                               output reg neuron_counter_rst, spike_counter_rst,
                               output reg neuron_0_memberane_reg_wr_rst,neuron_1_memberane_reg_wr_rst,neuron_2_memberane_reg_wr_rst,neuron_3_memberane_reg_wr_rst,
                               output reg send,
-                              output reg receive);
+                              output reg receive,
+                              output reg reconfig_mux_sel
+                              );
 
     reg[3:0] n_state, p_state;
   
@@ -36,7 +38,7 @@ module PE_controller  (input clk, rst, input_fifo_full, input_fifo_empty, compar
          neuron_counter_en, neuron_counter_load, spike_counter_en, spike_counter_load, output_spike_local_mem_wr_en,
          local_spike_to_global_address_mem_wr_en, output_fifo_wr_en, output_fifo_rd_en, done_transmiting, communitation_signal,wight_mux_sel,adder_cin,
          neuron_counter_rst, spike_counter_rst,neuron_0_memberane_reg_wr_rst,neuron_1_memberane_reg_wr_rst,
-         neuron_2_memberane_reg_wr_rst,neuron_3_memberane_reg_wr_rst, send, receive} = 28'b0;
+         neuron_2_memberane_reg_wr_rst,neuron_3_memberane_reg_wr_rst, send, receive, reconfig_mux_sel} = 29'b0;
          membrane_mux_sel =  post_local_index;
         
     case(p_state)

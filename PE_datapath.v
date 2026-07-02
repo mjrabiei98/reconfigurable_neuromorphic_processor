@@ -11,7 +11,6 @@ module PE_datapath #(
     weight_mem_1_init_file = "",
     weight_mem_2_init_file = "",
     weight_mem_3_init_file = "",
-    weight_mem_data_width = 32,
     local_weight_mem_data_width = 32,
     local_weight_mem_address_width = 32,
     membrane_reg_data_width = 32,
@@ -23,7 +22,8 @@ module PE_datapath #(
     local_spike_to_global_address_mem_data_width = 32,
     output_fifo_data_width = 8,
     output_fifo_depth = 32,
-    number_right_shift = 2
+    number_right_shift = 2,
+    packet_width = 21
 
 )(
     input clk, rst,
@@ -39,6 +39,7 @@ module PE_datapath #(
 
     input [1:0] membrane_mux_sel,
     input neuron_0_memberane_reg_wr_rst,neuron_1_memberane_reg_wr_rst,neuron_2_memberane_reg_wr_rst,neuron_3_memberane_reg_wr_rst,
+    input reconfig_mux_sel,
 
     output input_fifo_full, input_fifo_empty, comparator_0_out, comparator_1_out, comparator_2_out, comparator_3_out,
            neruron_counter_reached, spike_counter_reached, output_fifo_full, output_fifo_empty,
@@ -62,13 +63,32 @@ module PE_datapath #(
     wire [spike_counter_width-1:0] spike_counter_out;
     wire [2*spike_counter_width-1:0] output_spike_local_mem_out;
     wire [spike_counter_width-1:0] adder2_out;
-    wire [output_fifo_data_width-1:0] local_spike_to_global_address_mem_out;
+    wire [9:0] local_spike_to_global_address_mem_out;
     wire [local_weight_mem_data_width-3:0] weight_shifter_out;
     wire [local_weight_mem_data_width-3:0] weight_inverter_out;
     wire [local_weight_mem_data_width-3:0] weight_mux_out;
+    wire [packet_width-1:0] generated_spike_packet;
+
+    wire [9:0] output_spike_mux_out;
+    wire [9:0] reconfig_mux_out;
+    wire neuron_location_status_out;
+    wire [9:0]changed_neuron_location_memory_out;
+    wire [9:0]mapped_neuron_memory_out;
 
 
-    fifo #(.DATA_WIDTH(input_fifo_data_width), .DEPTH(input_fifo_depth)) input_spike_fifo(.clk(clk), .rst(rst), .wr_en(input_spike_fifo_wr_en), .rd_en(input_spike_fifo_rd_en), .din(input_spike_fifo_din), .dout(input_spike_fifo_dout), .full(input_fifo_full), .empty(input_fifo_empty));
+    fifo #(
+        .DATA_WIDTH(input_fifo_data_width), 
+        .DEPTH(input_fifo_depth)
+        ) input_spike_fifo(
+            .clk(clk), 
+            .rst(rst), 
+            .wr_en(input_spike_fifo_wr_en), 
+            .rd_en(input_spike_fifo_rd_en), 
+            .din(input_spike_fifo_din), 
+            .dout(input_spike_fifo_dout), 
+            .full(input_fifo_full), 
+            .empty(input_fifo_empty)
+        );
 
 
 
@@ -144,7 +164,14 @@ module PE_datapath #(
 
 
     
-    Adder #(.DATA_WIDTH(local_weight_mem_data_width-2)) memberane_adder(.a(weight_mux_out), .b(membrane_mux_out), .sum(membrane_adder_out), .cin(adder_cin));
+    Adder #(
+        .DATA_WIDTH(local_weight_mem_data_width-2)
+    ) memberane_adder (
+        .a(weight_mux_out), 
+        .b(membrane_mux_out), 
+        .sum(membrane_adder_out), 
+        .cin(adder_cin)
+    );
     
     shifter #(.number_right_shift(number_right_shift), .DATA_WIDTH(local_weight_mem_data_width-2)) weight_shifter(.din(membrane_mux_out), .dout(weight_shifter_out));
     not_each_bit #(.DATA_WIDTH(local_weight_mem_data_width-2)) weight_inverter(.in(weight_shifter_out), .out(weight_inverter_out));
@@ -204,11 +231,98 @@ module PE_datapath #(
 
 
 
-    Memory #(.ADDR_WIDTH(spike_counter_width), .DATA_WIDTH(local_spike_to_global_address_mem_data_width), .INIT_FILE(local_spike_to_global_address_mem_init_file)) local_spike_to_global_address_mem(.clk(clk), .rst(rst), .wr_en(local_spike_to_global_address_mem_wr_en), .addr(adder2_out), .din(), .dout(local_spike_to_global_address_mem_out));
+    Memory #(
+        .ADDR_WIDTH(spike_counter_width), 
+        .DATA_WIDTH(10), 
+        .INIT_FILE(local_spike_to_global_address_mem_init_file)
+    ) local_spike_to_global_address_mem (
+        .clk(clk), 
+        .rst(rst), 
+        .wr_en(local_spike_to_global_address_mem_wr_en), 
+        .addr(adder2_out), 
+        .din(), 
+        .dout(local_spike_to_global_address_mem_out)
+    );
 
 
 
-    fifo #(.DATA_WIDTH(output_fifo_data_width), .DEPTH(output_fifo_depth)) output_spike_fifo(.clk(clk), .rst(rst), .wr_en(output_fifo_wr_en), .rd_en(output_fifo_rd_en), .din(local_spike_to_global_address_mem_out), .dout(output_spike), .full(output_fifo_full), .empty(output_fifo_empty));
+    Memory #(
+        .ADDR_WIDTH(weight_mem_address_width), 
+        .DATA_WIDTH(weight_mem_data_width), 
+        .INIT_FILE(weight_mem_3_init_file)) 
+    changed_neuron_location_memory(
+        .clk(clk), 
+        .rst(rst), 
+        .wr_en(), 
+        .addr(local_spike_to_global_address_mem_out), 
+        .din(), 
+        .dout(changed_neuron_location_memory_out)
+    );
+
+
+    Memory #(
+        .ADDR_WIDTH(), 
+        .DATA_WIDTH(), 
+        .INIT_FILE()) 
+    mapped_neuron_memory(
+        .clk(clk), 
+        .rst(rst), 
+        .wr_en(), 
+        .addr(neuron_counter_out), 
+        .din(), 
+        .dout(mapped_neuron_memory_out)
+    );
+
+
+    mux2to1 #(
+        .DATA_WIDTH(10)
+    ) reconfig_mux (
+        .in0(local_spike_to_global_address_mem_out), 
+        .in1(input_spike_fifo_dout[19:10]), 
+        .sel(reconfig_mux_sel), 
+        .out(reconfig_mux_out)
+    );
+
+
+    Memory #(
+        .ADDR_WIDTH(), 
+        .DATA_WIDTH(1), 
+        .INIT_FILE("")) 
+    neuron_location_status(
+        .clk(clk), 
+        .rst(rst), 
+        .wr_en(), 
+        .addr(reconfig_mux_out), 
+        .din(input_spike_fifo_dout[0:0]), 
+        .dout(neuron_location_status_out)
+    );
+
+
+    mux2to1 #(
+        .DATA_WIDTH(10)
+    ) output_spike_mux (
+        .in0(local_spike_to_global_address_mem_out), 
+        .in1(changed_neuron_location_memory_out), 
+        .sel(neuron_location_status_out), 
+        .out(output_spike_mux_out)
+    );
+
+    assign generated_spike_packet = {1'b0, mapped_neuron_memory_out ,output_spike_mux_out };
+
+
+    fifo #(
+        .DATA_WIDTH(packet_width), 
+        .DEPTH(output_fifo_depth)) 
+    output_spike_fifo(
+        .clk(clk), 
+        .rst(rst), 
+        .wr_en(output_fifo_wr_en), 
+        .rd_en(output_fifo_rd_en), 
+        .din(generated_spike_packet), 
+        .dout(output_spike), 
+        .full(output_fifo_full), 
+        .empty(output_fifo_empty)
+    );
 
 
 
